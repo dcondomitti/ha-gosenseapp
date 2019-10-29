@@ -53,6 +53,7 @@ type ConfigFile struct {
 type AppConfig struct {
 	DebugLevel log.Level          `yaml:"debuglevel" json:"debuglevel"`
 	MQTT       MQTT               `yaml:"mqtt" json:"mqtt"`
+	DeviceName string             `yaml:"deviceName" json:"deviceName"`
 	Sensors    map[string]*Sensor `yaml:"sensors" json:"sensors"`
 }
 
@@ -125,16 +126,20 @@ func Run() {
 		log.SetLevel(SenseData.AppConfig.DebugLevel)
 	}
 
-	devicename, err := FindSenseDevice() // "/dev/hidraw2"
-	if err != nil {
-		log.Error(err.Error())
-		os.Exit(3)
+	if len(SenseData.AppConfig.DeviceName) < 1 {
+		devicename, err := FindSenseDevice()
+		if err != nil {
+			log.Error(err.Error())
+			os.Exit(3)
+		}
+
+		SenseData.AppConfig.DeviceName = devicename
 	}
 
 	alarmch := make(chan (gosense.Alarm), 10)
 	sensorch := make(chan (gosense.SenseSensor), 10)
 
-	s, err := gosense.NewWyzeSense(devicename, alarmch, sensorch)
+	s, err := gosense.NewWyzeSense(SenseData.AppConfig.DeviceName, alarmch, sensorch)
 	if err != nil {
 		log.Error(err.Error())
 		os.Exit(3)
@@ -211,10 +216,10 @@ loop:
 			// Only Alarms with flag 0xA2 (162) signal an open/close/motion alarm
 			if int(a.SensorFlags) != 162 {
 				log.Infof("ALARM: Ignoring Alarm with unknown flag: %x",
-					  a.SensorFlags)
+					a.SensorFlags)
 				break
 			}
-			
+
 			SenseData.Lock()
 			sensor, ok := SenseData.AppConfig.Sensors[a.MAC]
 			if ok {

@@ -12,3 +12,5 @@ require (
 	github.com/sirupsen/logrus v1.4.2
 	gopkg.in/yaml.v2 v2.2.2
 )
+
+replace github.com/dariopb/gosense => github.com/dcondomitti/gosense v0.0.0-20191030001527-9fa95313711a
